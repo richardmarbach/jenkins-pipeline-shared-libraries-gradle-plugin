@@ -14,40 +14,52 @@ import java.io.IOException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Objects
-import javax.annotation.Generated
 import javax.lang.model.element.Modifier
 
 private const val codegenPackage = "com.mkobit.jenkins.pipelines.codegen"
 
-private val generatedAnnotationSpec: AnnotationSpec = AnnotationSpec.builder(Generated::class.java).addMember("value", "{ \$S }", "Shared Library Plugin").build()
+private val generatedAnnotationSpec: AnnotationSpec = run {
+  // Temporary solution to emit annotation that works under Java 9
+  val className = try {
+    val java9ClassName = ClassName.get("javax.annotation.processing", "Generated")
+    Class.forName("javax.annotation.processing.Generated")
+    java9ClassName
+  } catch (notFound: ClassNotFoundException) {
+    // Default to Java 8 and below class names
+    ClassName.get("javax.annotation", "Generated")
+  }
+  AnnotationSpec.builder(className)
+    .addMember("value", "{ \$S }", "Shared Library Plugin")
+    .build()
+}
 
 internal fun localLibraryAdder(): JavaFile {
-  val javaxNonNull = AnnotationSpec.builder(
-    ClassName.get("javax.annotation", "Nonnull")
-  ).build()
+    val javaxNonNull = AnnotationSpec.builder(
+      ClassName.get("javax.annotation", "Nonnull")
+    ).build()
 
-  val nameParam = ParameterSpec.builder(ClassName.get(String::class.java).annotated(javaxNonNull), "name")
-    .addModifiers(Modifier.FINAL)
-    .build()
-  val versionParam = ParameterSpec.builder(ClassName.get(String::class.java).annotated(javaxNonNull), "version")
-    .addModifiers(Modifier.FINAL)
-    .build()
-  val changelogParam = ParameterSpec.builder(TypeName.BOOLEAN, "changelog")
-    .addModifiers(Modifier.FINAL)
-    .build()
-  val targetParam = ParameterSpec.builder(ClassName.get("hudson", "FilePath")
-    .annotated(javaxNonNull), "target")
-    .addModifiers(Modifier.FINAL)
-    .build()
-  val runClass = ClassName.get("hudson.model", "Run")
+    val nameParam = ParameterSpec.builder(ClassName.get(String::class.java).annotated(javaxNonNull), "name")
+      .addModifiers(Modifier.FINAL)
+      .build()
+    val versionParam = ParameterSpec.builder(ClassName.get(String::class.java).annotated(javaxNonNull), "version")
+      .addModifiers(Modifier.FINAL)
+      .build()
+    val changelogParam = ParameterSpec.builder(TypeName.BOOLEAN, "changelog")
+      .addModifiers(Modifier.FINAL)
+      .build()
+    val targetParam = ParameterSpec.builder(ClassName.get("hudson", "FilePath")
+      .annotated(javaxNonNull), "target")
+      .addModifiers(Modifier.FINAL)
+      .build()
+    val runClass = ClassName.get("hudson.model", "Run")
 //  val jobClass = ClassName.get("hudson.model", "Job")
 //  val runParam = ParameterSpec.builder(ParameterizedTypeName.get(runClass, WildcardTypeName.subtypeOf(jobClass), WildcardTypeName.subtypeOf(runClass)), "run", Modifier.FINAL)
-  val runParam = ParameterSpec.builder(ParameterizedTypeName.get(runClass, WildcardTypeName.subtypeOf(Object::class.java), WildcardTypeName.subtypeOf(Object::class.java)), "run", Modifier.FINAL)
-    .addAnnotation(javaxNonNull)
-    .build()
-  val listenerParam = ParameterSpec.builder(ClassName.get("hudson.model", "TaskListener").annotated(javaxNonNull), "listener")
-    .addModifiers(Modifier.FINAL)
-    .build()
+    val runParam = ParameterSpec.builder(ParameterizedTypeName.get(runClass, WildcardTypeName.subtypeOf(Object::class.java), WildcardTypeName.subtypeOf(Object::class.java)), "run", Modifier.FINAL)
+      .addAnnotation(javaxNonNull)
+      .build()
+    val listenerParam = ParameterSpec.builder(ClassName.get("hudson.model", "TaskListener").annotated(javaxNonNull), "listener")
+      .addModifiers(Modifier.FINAL)
+      .build()
 
   val typeSpec = TypeSpec.classBuilder("LocalLibraryRetriever")
     .addAnnotation(generatedAnnotationSpec)
