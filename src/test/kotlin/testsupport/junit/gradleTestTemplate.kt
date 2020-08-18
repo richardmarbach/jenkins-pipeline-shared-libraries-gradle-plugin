@@ -44,7 +44,7 @@ annotation class ForGradleVersions(
 
 internal class MultiVersionGradleProjectTestTemplate : TestTemplateInvocationContextProvider {
   companion object {
-    private val DEFAULT_VERSIONS: Set<GradleVersion> by lazy {
+    private val ALL_VERSIONS: Set<GradleVersion> by lazy {
       setOf(
         GradleVersion.current(),
         GradleVersion.version("5.0"),
@@ -73,7 +73,7 @@ internal class MultiVersionGradleProjectTestTemplate : TestTemplateInvocationCon
           // Handle case where version is specified as 'current'
           versions.size == 1 && versions.first().toLowerCase() == "current" -> listOf(GradleVersion.current())
           versions.isNotEmpty() -> versions.map(GradleVersion::version)
-          else -> DEFAULT_VERSIONS
+          else -> ALL_VERSIONS
         }
       }
       .map { gradleVersions ->
@@ -121,14 +121,12 @@ private class FilteringGradleExecutionCondition(
     // System property key to run tests for specified versions.
     // Versions can be specified as 'all', 'default', or semicolon separated (';') versions
     private val VERSIONS_PROPERTY_KEY: String = "${ForGradleVersions::class.qualifiedName!!}.versions"
-    private val DEFAULT_CONDITION: ConditionEvaluationResult =
-      ConditionEvaluationResult.enabled("No filter specified")
   }
 
   override fun evaluateExecutionCondition(context: ExtensionContext): ConditionEvaluationResult {
-    return when (val propertyValue = System.getProperty(VERSIONS_PROPERTY_KEY) ?: return DEFAULT_CONDITION) {
-      "all", "default" -> ConditionEvaluationResult.enabled("All tests enabled through $propertyValue filter")
-      "current" -> {
+    return when (val propertyValue = System.getProperty(VERSIONS_PROPERTY_KEY) ?: "default") {
+      "all" -> ConditionEvaluationResult.enabled("All tests enabled through $propertyValue filter")
+      "current", "default" -> {
         if (targetVersion.equals(GradleVersion.current())) {
           ConditionEvaluationResult.enabled("Target version is the current version")
         } else {
